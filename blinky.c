@@ -8,10 +8,16 @@
 #include "user_interface.h"
 #include "user_config.h"
 
+#define REQUEST_SIZE 2
+#define NUMBER_OF_ADDED_BYTES 2
+#define REQUEST_WRITE 'w'
+#define REQUEST_READ 'r'
+#define REQUEST_INFO 'i'
 
-static const int pin = 1;
+#define GPIO0 '0'
+#define GPIO2 '2'
+
 static volatile os_timer_t some_timer;
-esp_udp my_udp;
 esp_tcp my_tcp;
 struct espconn espconn;
 uint8_t status=0;
@@ -28,11 +34,51 @@ void tcp_disconntected(void *arg)
 
 void sent_callback(void *arg)
 {
-    uart0_sendStr("Send cb \n\r");
+    uart0_sendStr("Sent cb \n\r");
 }
 
 void recv_callback (void *arg, char *pdata, unsigned short len)
 {
+    if (len == REQUEST_SIZE + NUMBER_OF_ADDED_BYTES) {
+        switch(pdata[0]) {
+        case REQUEST_WRITE:
+            switch (pdata[1]) {
+                case GPIO0:
+                    uart0_sendStr("Write GPIO0 \n\r");
+                    break;
+                case GPIO2:
+                    uart0_sendStr("Write GPIO2 \n\r");
+                    break;
+                default:
+                    uart0_sendStr("Write unknown \n\r");
+                    break;
+            break;
+        case REQUEST_READ:
+            switch (pdata[1]) {
+                case GPIO0:
+                    uart0_sendStr("Read GPIO0 \n\r");
+                    break;
+                case GPIO2:
+                    uart0_sendStr("Read GPIO2 \n\r");
+                    break;
+                default:
+                    uart0_sendStr("Read unknown \n\r");
+                    break;
+            break;
+        case REQUEST_INFO:
+            default:
+                uart0_sendStr("Info unknown \n\r");
+            break;
+        break;
+        default:
+            uart0_sendStr("Unknown command \n\r");
+        break;
+        }
+    }
+    else {
+        uart0_sendStr("Recved incorrect number of bytes");
+    }
+    /*
     uart0_sendStr("recv cb \n\r Len: ");
     char tab[] = {len+48, '\n', '\r', '\0'};
     uart0_sendStr(tab);
@@ -41,6 +87,8 @@ void recv_callback (void *arg, char *pdata, unsigned short len)
     uint8_t tab3[10] = {49, 50, 51, 51, 52, 53, 56, 77, 91, 61};
     char tab1[] = {'s', 't', espconn_sent(&espconn, tab3, 10) + 48, '\n', '\r', '\0'};
     uart0_sendStr(tab1);
+
+*/    
 }
 
 void wifi_callback( System_Event_t *evt ){
@@ -86,30 +134,6 @@ void wifi_callback( System_Event_t *evt ){
       case EVENT_STAMODE_GOT_IP:
       {
           uart0_sendStr("Wifi cb stammode got IP \n\r");
- /*         espconn.type = ESPCONN_UDP;
-          espconn.state = ESPCONN_NONE;
-          espconn.proto.udp = &my_udp;
-          espconn.proto.udp->local_port = espconn_port();
-          espconn.proto.udp->remote_port = 1234;
-          espconn.proto.udp->remote_ip[0] = 192;
-          espconn.proto.udp->remote_ip[1] = 168;
-          espconn.proto.udp->remote_ip[2] = 1;
-          espconn.proto.udp->remote_ip[3] = 5;
-          char tab4[] = {'c', 'u', espconn_create(&espconn), '\n', '\r', '\0'}; */
-/*
-          espconn.type = ESPCONN_TCP;
-          espconn.state = ESPCONN_NONE;
-          espconn.proto.tcp = &my_tcp;
-          espconn.proto.tcp->local_port = espconn_port();
-          espconn.proto.tcp->remote_port = 1234;
-          espconn.proto.tcp->remote_ip[0] = 192;
-          espconn.proto.tcp->remote_ip[1] = 168;
-          espconn.proto.tcp->remote_ip[2] = 1;
-          espconn.proto.tcp->remote_ip[3] = 5;
-          char tab4[] = {'c', 't', espconn_connect(&espconn), '\n', '\r', '\0'};
-          uart0_sendStr(tab4);
-          espconn_regist_connectcb(&espconn, tcp_conntected);
-          espconn_regist_disconcb(&espconn, tcp_disconntected);*/
 
           espconn.type = ESPCONN_TCP;
           espconn.state = ESPCONN_NONE;
@@ -187,37 +211,18 @@ void ICACHE_FLASH_ATTR user_init()
   struct station_config wifi_conf;
   struct ip_info info;
 
-  //  espconn.proto.udp->local_ip
-//  info.ip.addr
-
-  //  IP4_ADDR(espconn.udp->remote_ip, 192, 168, 1, 5)
-
-/*  espconn.proto.udp->local_ip[0] = 192;
-  espconn.proto.udp->local_ip[1] = 168;
-  espconn.proto.udp->local_ip[2] = 1;
-  espconn.proto.udp->local_ip[3] = 4;*/
-
-//  wifi_set_opmode(0x01);
+  wifi_set_opmode(0x01);
   uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
   uart0_sendStr("\n\r Siema \n\r");
 
-//  os_memcpy(wifi_conf.ssid, "NETIASPOT-D93A70", 32);
-//  os_memcpy(wifi_conf.password, "5z6uu24axp7e", 64);
+  os_memcpy(wifi_conf.ssid, "NETIASPOT-D93A70", 32);
+  os_memcpy(wifi_conf.password, "5z6uu24axp7e", 64);
   wifi_conf.bssid_set=0;
 
-//  char tab[] = {'s', 'c', wifi_station_set_config(&wifi_conf) + 48, '\n', '\r', '\0'};
-//  uart0_sendStr(tab);
-//  wifi_set_event_handler_cb(wifi_callback);
-//  char tab2[] = {'i', 'p', wifi_get_ip_info(0, &info)+48, '\n', '\r', '\0'};
-//  uart0_sendStr(tab2);
-  //uart0_sendStr("ip:" ",mask:");
-  /*  char tab3[] = {'i', 'p', 'a', ((uint8_t)(info.ip.addr&0xFF))+48,
-		         ((uint8_t)(info.ip.addr>>8&0xFF)),
-		         ((uint8_t)(info.ip.addr>>16&0xFF)),
-		         ((uint8_t)(info.ip.addr>>24&0xFF)), '\n', '\r', '\0'};
-  uart0_sendStr(tab3);*/
-
+  char tab[] = {'s', 'c', wifi_station_set_config(&wifi_conf) + 48, '\n', '\r', '\0'};
+  uart0_sendStr(tab);
+  wifi_set_event_handler_cb(wifi_callback);
 
   // setup timer (500ms, repeating)
   os_timer_setfn(&some_timer, (os_timer_func_t *)some_timerfunc, NULL);
