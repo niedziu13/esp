@@ -142,11 +142,13 @@ void some_timerfunc(void *arg)
 	char tab[] = {'S', 'C', 'S', ':', status + 48, '\n', '\r', '\0'};
 	uart0_sendStr(tab);
 
-	if (GPIO_REG_READ(GPIO_OUT_ADDRESS) & BIT2) {
- 	    gpio_output_set(BIT2, 0, BIT2, 0);
+	if (GPIO_REG_READ(GPIO_OUT_ADDRESS) & BIT0) {
+            uart0_sendStr("if here \n\r");
+            gpio_output_set(0, BIT0, BIT0, 0);
 	}
 	else {
- 	    gpio_output_set(0, BIT2, BIT2, 0);
+            uart0_sendStr("else here \n\r");
+ 	    gpio_output_set(BIT0, 0, BIT0, 0);
 	}
 
 	/*	if (status==5)
@@ -176,12 +178,10 @@ void ICACHE_FLASH_ATTR user_init()
   gpio_init();
 
   //Set GPIO2 to output mode
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
 
   //Set GPIO2 low
-  gpio_output_set(0, BIT2, BIT2, 0);
-
-
+  gpio_output_set(0, BIT0, BIT0, 0);
 
 
   struct station_config wifi_conf;
@@ -197,18 +197,18 @@ void ICACHE_FLASH_ATTR user_init()
   espconn.proto.udp->local_ip[2] = 1;
   espconn.proto.udp->local_ip[3] = 4;*/
 
-  wifi_set_opmode(0x01);
+//  wifi_set_opmode(0x01);
   uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
   uart0_sendStr("\n\r Siema \n\r");
 
-  os_memcpy(wifi_conf.ssid, "NETIASPOT-D93A70", 32);
-  os_memcpy(wifi_conf.password, "5z6uu24axp7e", 64);
+//  os_memcpy(wifi_conf.ssid, "NETIASPOT-D93A70", 32);
+//  os_memcpy(wifi_conf.password, "5z6uu24axp7e", 64);
   wifi_conf.bssid_set=0;
 
-  char tab[] = {'s', 'c', wifi_station_set_config(&wifi_conf) + 48, '\n', '\r', '\0'};
-  uart0_sendStr(tab);
-  wifi_set_event_handler_cb(wifi_callback);
+//  char tab[] = {'s', 'c', wifi_station_set_config(&wifi_conf) + 48, '\n', '\r', '\0'};
+//  uart0_sendStr(tab);
+//  wifi_set_event_handler_cb(wifi_callback);
 //  char tab2[] = {'i', 'p', wifi_get_ip_info(0, &info)+48, '\n', '\r', '\0'};
 //  uart0_sendStr(tab2);
   //uart0_sendStr("ip:" ",mask:");
@@ -221,6 +221,6 @@ void ICACHE_FLASH_ATTR user_init()
 
   // setup timer (500ms, repeating)
   os_timer_setfn(&some_timer, (os_timer_func_t *)some_timerfunc, NULL);
-  os_timer_arm(&some_timer, 10000, 1);
+  os_timer_arm(&some_timer, 1000, 1);
 }
 
